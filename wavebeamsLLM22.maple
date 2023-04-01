@@ -1,0 +1,56 @@
+#maple -q wavebeamsLLM22.maple
+#First we compute the eigenvalues
+with(LinearAlgebra):
+Digits:=200:
+ell:=1.:A:=1/ell:T:=2.1:
+f:=z->2*cot(z^2)-A*z*(coth(z*ell)-cot(z*ell)):
+pmax:=20:#kmax:=1000:
+S1:=[seq(evalf(p*Pi),p=0..pmax)]:
+#we look for (k*Pi/ell)^2<= pmax*Pi < ((k+1)*Pi/ell)^2
+#k<=sqrt(pmax*Pi)*ell/Pi<k+1
+kmax:=floor(sqrt(pmax*Pi)*(ell/Pi));
+S2:=[seq(evalf((k*Pi/ell)^2),k=1..kmax)]:
+S:=sort([op(S1),op(S2)]):
+print(min([seq(S[i+1]-S[i],i=1..nops(S)-1)]));
+print(S1[nops(S1)],S2[nops(S2)]);
+#G:=[seq(0,i=0..nops(S)-2)]:
+for i to nops(S)-1 do
+	zz:=fsolve(f(z),z=sqrt(S[i])..sqrt(S[i+1]));
+	Z[i]:=zz**2:
+od:
+#Z[37]:=Z[36]+1e-3:
+#print([seq(Z[i],i=1..nops(S)-1)]);
+#quit;
+L:=[seq(Z[i+1]-Z[i],i=1..nops(S)-2)]:
+member(min(L),L,'ii'):
+print(min(L),ii,L[ii]);
+for i to nops(S)-1 do
+	am[i]:=0:a[i]:=0:
+od:	
+#a[36]:=1.:a[37]:=-1.:
+#a[1]:=1:a[2]:=-1:
+a[ii]:=1:a[ii+1]:=-1:
+#u:=add((a[n]*exp(I*Z[n]*t)+am[n]*exp(-I*Z[n]*t))*sin(Z[n]*x),n=1..1):
+u:=add((a[n]*(cos(Z[n]*t)+I*sin(Z[n]*t))+am[n]*(cos(Z[n]*t)-I*sin(Z[n]*t)))*sin(Z[n]*x),n=1..nops(S)-1):
+ub:=add((a[n]*(cos(Z[n]*t)-I*sin(Z[n]*t))+am[n]*(cos(Z[n]*t)+I*sin(Z[n]*t)))*sin(Z[n]*x),n=1..nops(S)-1):
+#ub:=add((a[n]*exp(-I*Z[n]*t)+am[n]*exp(I*Z[n]*t))*sin(Z[n]*x),n=1..1):
+dux:=subs(x=0,diff(u,x)):
+dubx:=subs(x=0,diff(ub,x)):
+Obs:=simplify(evalf(int(dux*dubx,t=0..T)));
+E0:=add((a[n]**2+am[n]**2)*Z[n]**2,n=1..nops(S)-1);
+Obs/E0;
+num:=20:
+M:=Matrix(num,num,0,datatype=complex):
+#M:=Matrix(num,num,0,datatype=float):
+for i to num do
+	for j to num do
+		M[i,j]:= int(exp(I*(Z[i]-Z[j])*t),t=0..T):
+	od:
+od:
+M:=Matrix([seq([seq(M[i,j],i=1..num)],j=1..num)]):
+
+Lambda:=evalf(Eigenvalues(M)):
+Lambda:=[seq(evalf(abs(Lambda[i])),i=1..num)]:
+#Lambda:=[seq(evalf(abs(Lambda[i])),i=1..nops(Lambda))]:
+min(Lambda),max(Lambda);
+

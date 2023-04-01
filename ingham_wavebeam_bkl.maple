@@ -1,0 +1,196 @@
+#maple -q ingham_wavebeam_bkl.maple
+#First we compute the eigenvalues
+with(LinearAlgebra):
+Digits:=20:
+ell:=0.02:A:=1/ell:
+f:=z->2*cot(z^2)-A*z*(coth(z*ell)-cot(z*ell)):
+#pmax:=1000000:
+#pmax:=11000:
+pmax:=110000:
+S1:=[seq(evalf(p*Pi),p=0..pmax)]:
+#we look for (k*Pi/ell)^2<= pmax*Pi < ((k+1)*Pi/ell)^2
+#k<=sqrt(pmax*Pi)*ell/Pi<k+1
+kmax:=floor(sqrt(pmax*Pi)*(ell/Pi)):
+S2:=[seq(evalf((k*Pi/ell)^2),k=1..kmax)]:
+S:=sort([op(S1),op(S2)]):
+DS:=[seq(S[i+1]-S[i],i=1..nops(S)-1)]:
+member(min(DS),DS,'iminS'):
+member(max(DS),DS,'imaxS'):
+#print(S1[nops(S1)],S2[nops(S2)]);
+#G:=[seq(0,i=0..nops(S)-2)]:
+#Z:=[seq(0,i=1..nops(S)-1)]:
+for i to nops(S)-1 do
+	Z[i]:=0.:
+od:
+#istart:=6354:
+istart:=1: #999800:
+#istart:=9900:
+#num:=nops(S)-1:
+num:=10000:#ell=50 num=40 min=0.317e-116
+#ell=10 num=40 min=0.904672e-34
+#ell=10 num=20 min=0.679e-22
+#ell=2 num=20 0.000129
+#ell=2 num=40 0.643796124378729568264e-6
+#ell=1 num=40 0.002179213139418452362
+#ell=1 num=20 0.0294277375181293222549
+#ell=1 num=100 0.0000175396
+#ell=1 num=120 0.6474949e-5
+#ell=1 num=140 0.18704581e-5
+#ell=1 num=160 0.824666117613e-6
+#ell=1 num=180 0.3074397e-6
+#T=2.1 ell=1 num=20 0.19301156659668999981
+#T=2.1 ell=1 num=40 0.11347317685741831477
+#T=2.1 ell=1 num=80 0.10045704620102874387
+#T=2.1 ell=2 num=20 0.00097764814939039665094
+#T=2.1 ell=2 num=40 0.000043318867028633873918
+#T=2.1 ell=2 num=80 0.21889314655809734875e-5
+#T=2.2 ell=2 num=20 0.0077067058501544421387
+#T=2.2 ell=2 num=40 0.0024155903828092970007
+#T=2.2 ell=2 num=80 0.0018683782906802933067
+#T=2.2 ell=1 num=20 0.6640272067310156170
+#T=2.2 ell=1 num=40 0.65788381135180645759
+#T=2.2 ell=1 num=80 0.63542383954084750892
+#T=2.5 ell=1 num=20 1.6363595748860526024
+#T=2.5 ell=1 num=40 1.5372893265927754828
+#T=2.5 ell=1 num=80 1.5072440774346296236
+#T=3 ell=1 num=20 2.0382523437749209113
+#T=3 ell=1 num=40 2.0146655414691181505
+#T=3 ell=1 num=80 2.0047886732066909681
+ 
+for i from istart to istart+num+10 do
+#for i from istart-10 to istart+num+10 do
+	zz:=fsolve(f(z),z=sqrt(S[i])..sqrt(S[i+1]));
+	Zold[i]:=zz**2:
+od:
+#Z[37]:=Z[36]+1e-3:
+#print([seq(Z[i],i=1..nops(S)-1)]);
+
+s1:=1:
+s2:=1:
+for i from istart to istart+num+10 do
+	if(Zold[i]<S2[s2])then
+		Z[s1]:=Zold[i]:
+		s1:=s1+1:
+	else
+		ind[s2]:=s1:
+		Z[s1]:=S2[s2]:
+		s1:=s1+1:
+		s2:=s2+1:
+		i:=i-1:
+	fi:		
+od:
+ss:=0:
+for i to s2-1 do
+	if(Z[ind[i]]-Z[ind[i]-1]>Z[ind[i]+1]-Z[ind[i]])then
+		ss:=ss+1:
+		ind2[ss]:=ind[i]:
+		#ss:=ss+1:
+		#ind2[ss]:=ind[i]+1:
+	else
+		ss:=ss+1:
+		ind2[ss]:=ind[i]-1:
+		#ss:=ss+1:
+		#ind2[ss]:=ind[i]:			
+	fi:
+od:
+
+print(s1,s2);
+print([seq(Z[i],i=1..s1-1)]);
+print([seq([ind[i],Z[ind[i]],Z[ind[i]]-Z[ind[i]-1],Z[ind[i]+1]-Z[ind[i]]],i=1..s2-1)]);
+print([seq([ind2[2*i-1],Z[ind2[2*i-1]],Z[ind2[2*i]]-Z[ind2[2*i-1]]],i=1..ss/2)]);
+fd:=fopen("tata_eig.dat",WRITE):
+#fprintf(fd,"%d\n",ss):
+for i to ss do
+	fprintf(fd,"%d\n",ind2[i]-1):
+od:
+
+#now we add S2:
+
+
+DZ:=[seq(Z[i+1]-Z[i],i=1..nops(S)-2)]:
+#DZ:=[seq(Zold[i+1]-Zold[i],i=1..nops(S)-2)]:
+fd:=fopen("toto.dat",WRITE):
+#for i to nops(S)-2 do
+for i to num do
+	fprintf(fd,"%d %1.20g\n",i,DZ[i]):
+od:
+
+fd:=fopen("toto_eig.dat",WRITE):
+for i to num do
+	fprintf(fd,"%1.20g\n",Z[i]):
+od:
+quit;
+
+member(min(DZ),DZ,'iminZ'):
+member(max(DZ),DZ,'imaxZ'):
+print(nops(S)-1,iminZ,DZ[iminZ],imaxZ,DZ[imaxZ]);
+print(iminS,DS[iminS],imaxS,DS[imaxS]);
+iZ:=sort(DZ,'output=permutation'):
+iS:=sort(DS,'output=permutation'):
+#seq([iZ[j],DZ[iZ[j]]],j=1..nops(S)-2);
+#seq([iS[j],DS[iS[j]]],j=1..nops(S)-1);
+
+#T:=2.01:
+T:=3.:
+ZZ:=[seq(Z[i],i=istart..istart+num-1)]:
+DZZ:=[seq(Z[i+1]-Z[i],i=istart..istart+num-2)];
+M:=Matrix(num,num,0):
+for i to num do
+	for j to num do
+		#M[i,j]:= evalf(int(exp(I*(ZZ[i]-ZZ[j])*t),t=0..T)):
+		if(i=j)then
+			M[i,i]:=evalf(T):
+		else	
+			M[i,j]:= evalf((exp(I*(ZZ[i]-ZZ[j])*T)-1.)/(I*(ZZ[i]-ZZ[j]))):
+		fi:	
+	od:
+od:
+Q:=Matrix(IdentityMatrix(num)):
+#Q[1,1]:=1.:
+for i to num/2 do
+	Q[2*i-1,2*i]:=-1./(ZZ[2*i]-ZZ[2*i-1]):
+	Q[2*i-1,2*i]:=1./(ZZ[2*i]-ZZ[2*i-1]):
+od:	
+#M:=Transpose(Q).M.Q:
+M:=Matrix([seq([seq(M[i,j],j=1..num)],i=1..num)]):
+#quit;
+
+# fd:=fopen("totoM.dat",WRITE):
+# for i to num do
+# 	for j to num do
+# 		fprintf(fd,"%1.20g",Re(M[i,j])):
+# 		if(j<num)then
+# 			fprintf(fd," "):
+# 		else
+# 			fprintf(fd,"\n"):	
+# 		fi:
+# 	od:		
+# od:
+
+
+#C:=Matrix(M):
+#for i to 30 do
+#     (Q,R):= QRDecomposition(C):
+#     C:= R.Q:
+#end do:
+
+x0:= Vector(num,0):
+x0[1]:=1:
+tol:=1e-4:
+#xtmp:=M.x0:
+xtmp:=LinearSolve(M,x0):
+x1:=Normalize(xtmp, 2):
+for i to 10 while Norm(x1-x0)>tol do
+  #xtmp:= M.x1:
+  xtmp:=LinearSolve(M,x1):	
+  x0,x1 := x1, Normalize(xtmp, 2); 
+od:
+#x1^*.M.x1, x1, iter=i;
+x1^*.M.x1,iter=i;
+#quit;
+#Lambda1:=[seq(abs(C[i,i]),i=1..num)];
+Lambda:=evalf(Eigenvalues(M)):
+Lambda:=[seq(evalf(abs(Lambda[i])),i=1..num)]:
+min(Lambda),max(Lambda);
+#min(Lambda1),max(Lambda1);
+
